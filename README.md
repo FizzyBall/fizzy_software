@@ -14,11 +14,12 @@ follow a tutorial on making a virtual environment or following the following ste
 5. done!!!
 
 Now we need to download the packages to run the python files
-
+```
 python -m pip install pyjoystick
 python -m pip install matplotlib
 python -m pip install keyboard 
 (python -m pip install requests) (not sure if this is needed)
+```
 
 
 

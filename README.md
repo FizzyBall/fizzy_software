@@ -29,27 +29,3 @@ To run everything you will have to:
 4. connect the Xbox controller via bluetooth (only needed for 'fizzy_joystick..' and 'fizzy_state_machine' files)
 5. check if the firmware is the latest version and is compatible with the python code
 6. run programm
-
-
-
-
-
-
-
-
-
-1. Open the Anaconda Prompt.
-2. Clone this repository and cd inside it.
-3. Create a new Conda environment:
-
-```
-conda env create --prefix ./envs --file environment.yml
-```
-
-4. Activate the environment:
-
-```
-conda activate ./envs
-```
-
-Document the rest of the installation!!

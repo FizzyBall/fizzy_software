@@ -50,13 +50,13 @@ def main():
     # Create state sequence
     sequence = [
         
-        Neutral(duration=2),
+        # Neutral(duration=2),
 
-        Wiggle(config.T1, config.T2, config.A1, config.A2, duration=2),
+        # Wiggle(config.T1, config.T2, config.A1, config.A2, duration=2),
         
         Zero_stand(config.K_P, duration=1),
 
-        Wiggle(config.T1, config.T2, config.A1, config.A2, duration=1)
+        # Wiggle(config.T1, config.T2, config.A1, config.A2, duration=1)
 
         # Vibrate(config.T1V, config.T2V, config.A1V, config.A2V, duration=3),
 
@@ -100,7 +100,7 @@ def main():
             "acc_mag": acc_mag
         }
 
-        print(data[0])
+        # print(data[0])
         # Handle interrupts
         event = interrupts.check(joystick, sensors)
 

@@ -27,7 +27,7 @@ def extract_acc(packet):
     # Compute magnitude
     acc_mag = np.sqrt(x**2 + y**2 + z**2)
     
-    if acc_mag > 1:
-        print(acc_mag)
+    # if acc_mag > 1:
+        # print(acc_mag)
 
     return acc_mag

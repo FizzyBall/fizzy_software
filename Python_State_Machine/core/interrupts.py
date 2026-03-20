@@ -36,7 +36,7 @@ class Interrupts:
         # --------------------------------------
 
         # Hard tap
-        if acc_mag > 2:
+        if acc_mag > 1.5:
             return "TAP"
 
         # --------------------------------------

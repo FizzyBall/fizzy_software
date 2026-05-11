@@ -10,22 +10,36 @@ from states.base import State
 
 class Backward(State):
 
-    def __init__(self, Kp, time_backwards, time_forwards, cycle_duration_roll_forward, duration=None):
+    def __init__(self, config, duration=None):
 
         super().__init__(duration)
+       
+        self.config = config
 
-        self.Kp = Kp
+        # Internal timer for motion phase
+        self.phase_start = None
 
-        self.time_backwards = time_backwards
-        self.time_forwards = time_forwards
-        self.cycle_duration_roll_forward = cycle_duration_roll_forward # total ammount of time in this cycle
+    def enter(self):
+        super().enter()
 
-
+        # Reset cycle timing every time the state starts
+        self.phase_start = time.time()
 
     def update(self, dt, sensors, joystick):
 
-        # Time inside oscillation cycle
-        t = (time.time() - self.start_time) % self.cycle_duration_roll_forward
+
+        self.Kp = self.config.Kp
+
+        self.time_backwards = self.config.time_backwards
+        self.time_forwards = self.config.time_forwards
+        self.cycle_duration_roll_forward = self.config.cycle_duration_roll_forward # total ammount of time in this cycle
+
+        
+        # Time since entering this state
+        elapsed = time.time() - self.phase_start
+
+        # Optional repeat of the whole cycle
+        t = elapsed % self.cycle_duration_roll_forward
 
         roll = sensors["roll"]
        

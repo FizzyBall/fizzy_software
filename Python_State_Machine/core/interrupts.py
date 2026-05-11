@@ -15,7 +15,7 @@ Priority:
 
 class Interrupts:
 
-    def check(self, joystick, sensors):
+    def check(self, joystick, sensors, config):
         """
         Analyze inputs and generate events.
 
@@ -29,14 +29,14 @@ class Interrupts:
         yaw = sensors["yaw"]
         acc_mag = sensors["acc_mag"]
 
-        
+        self.config = config
 
         # --------------------------------------
         # Tapping sensor input
         # --------------------------------------
 
         # Hard tap
-        if acc_mag > 1.5:
+        if acc_mag > self.config.sensitivity:
             return "TAP"
 
         # --------------------------------------

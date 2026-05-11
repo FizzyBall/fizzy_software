@@ -8,6 +8,7 @@ Responsibilities:
 3. Run FSM
 4. Handle interrupts
 5. Send motor commands
+6. loads and writes to JSON file to communicate with dashboard.py
 """
 
 
@@ -23,7 +24,7 @@ from core.interrupts import Interrupts
 from states.neutral import Neutral
 from states.wiggle import Wiggle
 from states.vibrate import Vibrate
-from states.inbalance import Inbalance
+from states.random import Random
 from states.manual import Manual
 from states.zero_stand import Zero_stand
 from states.forward import Forward 
@@ -33,11 +34,39 @@ from fizzy_io.imu_angle import extract_euler
 from fizzy_io.imu_acc import extract_acc
 from fizzy_io.joystick import XboxThread
 
+from config import Config
 
-import config
+
+
+def program_sequence(program, config):
+    if program == "walk":
+        return [
+            Backward(config, duration=config.duration_walk),
+            Zero_stand(config, duration=1),
+            Neutral(duration=config.duration_wait),
+        ]
+
+    elif program == "balance":
+        return [
+            Random(config, duration=2),
+        ]
+
+    elif program == "table":
+        return [
+            Backward(config, duration=6),
+            Wiggle(config, duration=config.duration_table)
+        ]
+    elif program == "standby":
+        return [
+            Vibrate(config, duration=1),
+            Neutral(duration=5),
+        ]
 
 
 def main():
+    # Time at which the current program started
+    program_start_time = time.time()
+    taps = 0
 
     # Start joystick thread
     joystick = XboxThread()
@@ -47,28 +76,23 @@ def main():
     # Hardware interface
     fizzy = Fizzy()
 
-    # Create state sequence
-    sequence = [
-        
-        # Neutral(duration=2),
+    # Parameters
+    config = Config()
+    config.load()
+    
+    # Make sure the main.py can run by itself
+    config.update_settings (power = True)
 
-        # Wiggle(config.T1, config.T2, config.A1, config.A2, duration=2),
-        
-        Zero_stand(config.K_P, duration=1),
+    # Reset the dashboard values when fizzy starts
+    config.save_runtime()
 
-        # Wiggle(config.T1, config.T2, config.A1, config.A2, duration=1)
-
-        # Vibrate(config.T1V, config.T2V, config.A1V, config.A2V, duration=3),
-
-        # Zero_stand(config.K_P, duration=2),
-
-        # Backward(config.K_P, config.time_backwards, config.time_forwards, config.cycle_duration_roll_forward, duration=5)
-    ]
-    ## not used:
-    # Inbalance(config.K_P, duration=2),
+    # save last data storage
+    _last_valid_data = {}
 
     # FSM
-    fsm = StateMachine(sequence)
+    current_program = config.program
+
+    fsm = StateMachine(program_sequence(current_program, config))
     fsm.start()
 
     interrupts = Interrupts()
@@ -82,14 +106,35 @@ def main():
         dt = now - last
         last = now
 
+        config.load()
+
+        if config.program != current_program:
+            print(f"Switching to {config.program}")
+            current_program = config.program
+
+            # Reset counters for the newly selected program
+            taps = 0
+            program_start_time = time.time()
+
+            # Update dashboard immediately
+            config.update_runtime(taps=taps, time_seconds=0)
+
+            fsm = StateMachine(program_sequence(current_program, config))
+            fsm.start()
+
         # Read IMU
         try:
             data = fizzy.get_data()
+            
         except Exception as e:
             print("IMU read failed:", e) # Communication dropout try again and print error
             continue
 
-        roll, pitch, yaw = extract_euler(data)
+        try:
+            roll, pitch, yaw = extract_euler(data)    # place in the try loop to make the connection loss not vital
+        except:
+            data = _last_valid_data
+            roll, pitch, yaw = extract_euler(data)
 
         acc_mag = extract_acc(data)
 
@@ -100,9 +145,9 @@ def main():
             "acc_mag": acc_mag
         }
 
-        # print(data[0])
+       
         # Handle interrupts
-        event = interrupts.check(joystick, sensors)
+        event = interrupts.check(joystick, sensors, config)
 
         # Exit program
         if event == "EXIT":
@@ -110,12 +155,20 @@ def main():
             print('Bye ...')
             break
 
+        # Shutdown check via JSON
+        if getattr(config, "power", True) is False:
+            fizzy.stop()
+            print("Power OFF detected in JSON. Bye...")
+            break
 
         # IMU input correction
         elif event == "TAP":
             if fsm.auto_mode:
-                fsm.push(Zero_stand(config.K_P, duration=1))
-                fsm.push(Backward(config.K_P, config.time_backwards, config.time_forwards, config.cycle_duration_roll_forward, duration=5))
+                fsm.push(Zero_stand(config, duration=1))
+                # Increase tap counter and write it to the JSON file
+                taps += 1
+                print(f"Taps: {taps}")
+                config.update_runtime(taps=taps)
 
         # Manual override
         elif event == "MANUAL":
@@ -124,12 +177,11 @@ def main():
 
         # Motor off
         elif event == "NEUTRAL":
-
-            fsm.push(Neutral())
+            config.program = "balance"
+            fsm.push(Neutral(duration=1))
 
         # Resume autonomy
         elif event == "RESUME":
-
             while not fsm.auto_mode:
                 fsm.pop()
 
@@ -141,7 +193,14 @@ def main():
 
         # Send command
         fizzy.set_motor(power)
-   
+
+        # Update elapsed program time in the JSON file
+        elapsed_time = time.time() - program_start_time
+        config.update_runtime(time_seconds=elapsed_time)
+
+        # save old data
+        _last_valid_data = data
+
         # Making sure that the cycle time is running with a minimum cycle time.
         endtime = time.time()
         cycle_duration = endtime-last

@@ -104,7 +104,7 @@ class StateMachine:
         - Recovery
         - Safety reflexes
 
-        Saves current state on stack.
+        Saves current state on stack. 
         """
 
         if self.current:
@@ -123,9 +123,9 @@ class StateMachine:
 
     def pop(self):
         """
-        Restore previous state from stack.
+        Restore previous state from stack or restart sequence from beginning.
 
-        Called when temporary state finishes.
+        Called when temporary state finishes and returns to auto mode when stack is empty.
         """
 
         if self.stack:
@@ -133,14 +133,20 @@ class StateMachine:
             # Exit override
             self.current.exit()
 
-            # Restore previous state
-            self.current, self.index = self.stack.pop()
+            # # Restore previous state
+            # self.current, self.index = self.stack.pop()
+            # self.current.enter()
 
-            self.current.enter()
+            # Remove previous context from stack
+            self.stack.pop()
 
         # If stack empty → return to auto
         if not self.stack:
             self.auto_mode = True
+            # restart sequence from beginning 
+            self.index = 0
+            self.current = self.states[self.index]
+            self.current.enter()
 
     # --------------------------------------------------
     # Main update interface

@@ -9,14 +9,18 @@ from states.base import State
 
 class Zero_stand(State):
 
-    def __init__(self, Kp, duration=None):
+    def __init__(self, config, duration=None):
 
         super().__init__(duration)
 
-        self.Kp = Kp
+        self.config = config
+        self.Kp = self.config.Kp
+
 
     def update(self, dt, sensors, joystick):
 
+        self.Kp = self.config.Kp
+        
         roll = sensors["roll"]
 
         # Reference upright position

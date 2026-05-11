@@ -1,3 +1,5 @@
+
+
 robot_control/
 │
 ├── main.py                 # Main loop (entry point)
@@ -23,10 +25,10 @@ robot_control/
 │
 ├── config.py               # Parameters
 │
-└── fizzy_udp.py            # Setup udp onnection with the real fizzy and comment functions for motor control and data aquisition
+│
+├── fizzy_udp.py            # Setup udp onnection with the real fizzy and comment functions for motor control and data aquisition
+│
+│
+└── dashboard.py            # run in a seperate terminal (not python): Streamlit run ..\dashboard.py (choose the rigt file location)
 
-dashboard.py                # run in a seperate terminal (not python): Streamlit run Fizzy_program_control\dashboard.py
 
-
-
-pip install streamlit-autorefresh
